@@ -30,7 +30,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	int tx = threadIdx.x, ty = threadIdx.y;
 	int bx = blockIdx.x, by = blockIdx.y;
 	// out of bound
-	__shared__ int tile_size = input_size / TILE_WIDTH 
+	__shared__ int tile_size = input_size / TILE_WIDTH;
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
 	tmp[tx][ty] = input[col + input_size*row];
