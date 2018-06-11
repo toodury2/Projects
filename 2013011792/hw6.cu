@@ -18,32 +18,36 @@
 using namespace std;
 
 __global__ void maxpool(float *input, float *output, const int input_size, const int filter_size) {
-	// input : input_matrix address
-	// output : output buffer address
-	// input_size : width, height of input matrix
-	// filter_size : filter_size of maxpolling
-	// all input, output matrices are vectorized
+   // input : input_matrix address
+    // output : output buffer address
+    // input_size : width, height of input matrix
+    // filter_size : filter_size of maxpolling
+    // all input, output matrices are vectorized
 
-	int col = blockDim.x * blockIdx.x + threadIdx.x;
-	int row = blockDim.y * blockIdx.y + threadIdx.y;
+    int col = blockDim.x * blockIdx.x + threadIdx.x;
+    int row = blockDim.y * blockIdx.y + threadIdx.y;
 
-	int tx = threadIdx.x, ty = threadIdx.y;
-	int bx = blockIdx.x, by = blockIdx.y;
-	// out of bound
-	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
+    // out of bound
 
-	tmp[tx][ty] = input[col + input_size*row];
-	__syncthreads();
+    // CHANGE
+   // Requried for finding max value
+   float max = -9999;
 
-	int max = 0;
-	__syncthreads();
+   if( (col < filter_size*filter_size) && (row < filter_size*filter_size) && threadIdx.x % filter_size == 0 && threadIdx.y % filter_size == 0)
+   {
+      for (int i = 0; i < filter_size; i++)
+      {
+         for (int j = 0; j < filter_size; j++)
+         {
+            float val = input[ (filter*col+i) * input_size + (filter*row + j)];
+            if (max < val)
+               max = val;
+         }
 
-	atomicMax(tmp, max);
-	
-	output[bx + by] = max;
-	__syncthreads();
-
-	// CHANGE
+      }
+   }
+   
+   output[filter_size*col + row] = max;
 }
 
 __global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size) {
