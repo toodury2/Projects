@@ -31,23 +31,20 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 
     // CHANGE
    // Requried for finding max value
-   float max = -9999;
+   __shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-   if( (col < filter_size*filter_size) && (row < filter_size*filter_size) && threadIdx.x % filter_size == 0 && threadIdx.y % filter_size == 0)
+   tmp[threadIdx.x][threadIdx.y] = input[col][row];
+   __syncthreads();
+
+   output[row*TILE_WIDTH + col] = tmp[0][0];
+   __syncthreads();
+
+   if(output[row*TILE_WIDTH + col] < tmp[threadIdx.x][threadIdx.y])
    {
-      for (int i = 0; i < filter_size; i++)
-      {
-         for (int j = 0; j < filter_size; j++)
-         {
-            float val = input[ (filter_size*col+i) * input_size + (filter_size*row + j)];
-            if (max < val)
-               max = val;
-         }
-
-      }
+		output[row*TILE_WIDTH + col] =tmp[threadIdx.x][threadIdx.y]
    }
-   
-   output[filter_size*col + row] = max;
+   __syncthreads();
+	
 }
 
 __global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size) {
