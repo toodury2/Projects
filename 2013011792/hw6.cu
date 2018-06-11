@@ -41,7 +41,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 
    if(output[row*TILE_WIDTH + col] < tmp[threadIdx.x][threadIdx.y])
    {
-		output[row*TILE_WIDTH + col] =tmp[threadIdx.x][threadIdx.y]
+		output[row*TILE_WIDTH + col] =tmp[threadIdx.x][threadIdx.y];
    }
    __syncthreads();
 	
