@@ -35,10 +35,10 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	tmp[tx][ty] = input[col + input_size*row];
 	__syncthreads();
 
-	int max = tmp[bx][by];
+	int max = 0;
 	__syncthreads();
 
-	atomicMax(max, tmp[tx][ty]);
+	atomicMax(tmp, max);
 	
 	output[bx + by] = max;
 	__syncthreads();
