@@ -27,7 +27,6 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	int col = blockDim.x * blockIdx.x + threadIdx.x;
 	int row = blockDim.y * blockIdx.y + threadIdx.y;
 
-	int tx = threadIdx.x, ty = threadIdx.y;
 	// out of bound
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
@@ -126,9 +125,9 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < input_size*input_size; ++i) {
 		input_in >> maxpool_input[i];
-		a_in >> a + i;
-		b_in >> b + i;
-		c_in >> c + i;
+		a_in >> a[i];
+		b_in >> b[i];
+		c_in >> c[i];
 	}
 
 	// prints inputs for debugging.
