@@ -31,13 +31,16 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	// out of bound
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-	tmp[tx][ty] = input[col + input_size*row];
+	tmp[threadIdx.x][threadIdx.y] = input[col + input_size*row];
 	__syncthreads();
-
-	int max = tmp[0][0];
-	atomicMax(max, tmp[tx][ty]);
-	
-	output[blockDim.x + blockDim.y] = max;
+ 
+	output[blockIdx.x*TILE_WIDTH + blockIdx.y] = tmp[0][0];
+	__syncthreads();
+ 
+	if(output[blockIdx.x*TILE_WIDTH + blockIdx.y] > tmp[threadIdx.x][threadIdx.y])
+	{
+		 output[blockIdx.x*TILE_WIDTH + blockIdx.y] = tmp[threadIdx.x][threadIdx.y];
+	}
 	__syncthreads();
 
 	// CHANGE
@@ -123,9 +126,9 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < input_size*input_size; ++i) {
 		input_in >> maxpool_input[i];
-		a_in >> &a[i];
-		b_in >> &b[i];
-		c_in >> &c[i];
+		a_in >> a + i;
+		b_in >> b + i;
+		c_in >> c + i;
 	}
 
 	// prints inputs for debugging.
