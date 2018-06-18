@@ -28,9 +28,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	int row = blockDim.y * blockIdx.y + threadIdx.y;
 
 	int tx = threadIdx.x, ty = threadIdx.y;
-	int bx = blockIdx.x, by = blockIdx.y;
 	// out of bound
-	__shared__ int tile_size = input_size / TILE_WIDTH;
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
 	tmp[tx][ty] = input[col + input_size*row];
@@ -113,9 +111,9 @@ int main(int argc, char **argv) {
 	}
 
 	float maxpool_input[input_size*input_size];
-	a = new float[input_size*input_size];
-	b = new float[input_size*input_size];
-	c = new float[input_size*input_size];
+	float *a = new float[input_size*input_size];
+	float *b = new float[input_size*input_size];
+	float *c = new float[input_size*input_size];
 
 	// read input matrices 
 	ifstream input_in(MAXPOOL_INPUT_FILENAME);
@@ -171,9 +169,9 @@ int main(int argc, char **argv) {
 	cudaMalloc(&maxpool_output, sizeof(float) * maxpool_output_size * maxpool_output_size);
 
 	// copy variable to device memory
-	cudaMemcpy(dev_mem_a, &a, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_mem_b, &b, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_mem_c, &c, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_mem_a, a, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_mem_b, b, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_mem_c, c, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_mem_input, &maxpool_input, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
 
 	// launch CUDA kernels
