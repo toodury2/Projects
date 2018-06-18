@@ -18,77 +18,75 @@
 using namespace std;
 
 __global__ void maxpool(float *input, float *output, const int input_size, const int filter_size) {
-   // input : input_matrix address
-    // output : output buffer address
-    // input_size : width, height of input matrix
-    // filter_size : filter_size of maxpolling
-    // all input, output matrices are vectorized
-
-    int col = blockDim.x * blockIdx.x + threadIdx.x;
-    int row = blockDim.y * blockIdx.y + threadIdx.y;
-
-    // out of bound
-
-    // CHANGE
-   // Requried for finding max value
-   __shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
-
-   tmp[threadIdx.x][threadIdx.y] = input[col + input_size*row];
-   __syncthreads();
-
-   output[blockIdx.x*TILE_WIDTH + blockIdx.y] = tmp[0][0];
-   __syncthreads();
-
-   if(output[blockIdx.x*TILE_WIDTH + blockIdx.y] < tmp[threadIdx.x][threadIdx.y])
-   {
-		output[blockIdx.x*TILE_WIDTH + blockIdx.y] =tmp[threadIdx.x][threadIdx.y];
-   }
-   __syncthreads();
-	
-}
-
-__global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size) {
-	// a, b, c : input matrix address
-	// alpha, beta : input constant
+	// input : input_matrix address
 	// output : output buffer address
 	// input_size : width, height of input matrix
+	// filter_size : filter_size of maxpolling
 	// all input, output matrices are vectorized
+
+	int col = blockDim.x * blockIdx.x + threadIdx.x;
+	int row = blockDim.y * blockIdx.y + threadIdx.y;
 
 	int tx = threadIdx.x, ty = threadIdx.y;
 	int bx = blockIdx.x, by = blockIdx.y;
+	// out of bound
+	__shared__ int tile_size = input_size / TILE_WIDTH 
+	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-	int row = by*blockDim.y + ty;
-	int col = bx*blockDim.x + tx;
+	tmp[tx][ty] = input[col + input_size*row];
+	__syncthreads();
 
-	if (row >= input_size || col >= input_size) { return; }
+	int max = tmp[0][0];
+	atomicMax(max, tmp[tx][ty]);
+	
+	output[blockDim.x + blockDim.y] = max;
+	__syncthreads();
 
-	// allocate 2D tiles in __shared__ memory
-	__shared__ float s_a[TILE_WIDTH][TILE_WIDTH];
-	__shared__ float s_b[TILE_WIDTH][TILE_WIDTH];
+	// CHANGE
+}
 
-	float result = 0;
+__global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size){
+    // a, b, c : input matrix address
+    // alpha, beta : input constant
+    // output : output buffer address
+    // input_size : width, height of input matrix
+    // all input, output matrices are vectorized
 
-	// make sure you handle the case when the matrix sizes are not
-	// multiple of TILE_WIDTH!
-	// loop over the tiles of the input in phases
-	for (int p = 0; p < input_size / TILE_WIDTH; ++p) {
-		// CHANGE
+    int tx = threadIdx.x, ty = threadIdx.y;
+    int bx = blockIdx.x,  by = blockIdx.y;
+
+    int row = by*blockDim.y + ty;
+    int col = bx*blockDim.x + tx;
+    
+    if(row>=input_size ||col>=input_size) { return; }
+    
+    // allocate 2D tiles in __shared__ memory
+    __shared__ float s_a[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float s_b[TILE_WIDTH][TILE_WIDTH];
+
+    float result = 0;
+
+    // make sure you handle the case when the matrix sizes are not
+    // multiple of TILE_WIDTH!
+    // loop over the tiles of the input in phases
+    for(int p = 0; p < input_size/TILE_WIDTH; ++p){
+        // CHANGE
 		s_a[ty][tx] = a[row*input_size + (p*TILE_WIDTH + tx)];
-		s_b[ty][tx] = b[(p*TILE_WIDTH + ty)*input_size + col];
+		s_b[ty][tx] = b[(p*TILE_WIDTH+ty)*input_size + col];
 		// You need to use __syncthreads() a few times
-		// to synchronize the threads in a thread block.
+        // to synchronize the threads in a thread block.
 		__syncthreads();
 
-		for (int i = 0; i < TILE_WIDTH; i++) {
+		for (int i = 0; i < TILE_WIDTH; i++){
 			result += alpha * s_a[ty][i] * s_b[i][tx];
 		}
 		result += beta*c[row*input_size + (p*TILE_WIDTH + tx)];
 		__syncthreads();
-	}
+    }
 
-	// write out the result to output[row*input_size + col] 
+    // write out the result to output[row*input_size + col] 
 	output[row * input_size + col] = result;
-	// CHANGE
+    // CHANGE
 }
 
 
@@ -115,9 +113,9 @@ int main(int argc, char **argv) {
 	}
 
 	float maxpool_input[input_size*input_size];
-	float a[input_size*input_size];
-	float b[input_size*input_size];
-	float c[input_size*input_size];
+	a = new float[input_size*input_size];
+	b = new float[input_size*input_size];
+	c = new float[input_size*input_size];
 
 	// read input matrices 
 	ifstream input_in(MAXPOOL_INPUT_FILENAME);
@@ -127,9 +125,9 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < input_size*input_size; ++i) {
 		input_in >> maxpool_input[i];
-		a_in >> a[i];
-		b_in >> b[i];
-		c_in >> c[i];
+		a_in >> &a[i];
+		b_in >> &b[i];
+		c_in >> &c[i];
 	}
 
 	// prints inputs for debugging.
