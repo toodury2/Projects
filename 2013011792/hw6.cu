@@ -30,15 +30,15 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	// out of bound
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-	tmp[threadIdx.x][threadIdx.y] = input[col + row];
+	tmp[threadIdx.y][threadIdx.x] = input[col*input_size + row];
 	__syncthreads();
  
-	output[blockIdx.x*TILE_WIDTH + blockIdx.y] = tmp[blockIdx.x][blockIdx.y];
+	output[blockIdx.x*input_size + blockIdx.y] = tmp[blockIdx.x][blockIdx.y];
 	__syncthreads();
  
-	if(output[blockIdx.x*TILE_WIDTH + blockIdx.y] < tmp[threadIdx.x][threadIdx.y])
+	if(output[blockIdx.x*input_size + blockIdx.y] < tmp[threadIdx.x][threadIdx.y])
 	{
-		 output[blockIdx.x*TILE_WIDTH + blockIdx.y] = tmp[threadIdx.x][threadIdx.y];
+		 output[blockIdx.x*input_size + blockIdx.y] = tmp[threadIdx.x][threadIdx.y];
 	}
 	__syncthreads();
 
