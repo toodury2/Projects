@@ -33,7 +33,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	// out of bound
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-	tmp[tx][ty] = input[row*input_size + col];
+	tmp[tx][ty] = input[col*input_size + row];
 	__syncthreads();
  
 	if(tx == 0 and ty == 0)
