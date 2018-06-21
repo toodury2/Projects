@@ -9,7 +9,7 @@
 #include<vector>
 #include<string>
 
-#define TILE_WIDTH 2   /* set TILE_WIDTH 16 for the evaluation! */
+#define TILE_WIDTH 16   /* set TILE_WIDTH 16 for the evaluation! */
 #define MAXPOOL_INPUT_FILENAME "input.txt"
 #define A_FILENAME "a.txt"
 #define B_FILENAME "b.txt"
@@ -31,7 +31,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
     int col = bx*blockDim.x + tx;
 
 	// out of bound
-	__shared__ int tmp[input_size][input_size];
+	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
 	tmp[ty][tx] = input[row*input_size + col];
 	__syncthreads();
