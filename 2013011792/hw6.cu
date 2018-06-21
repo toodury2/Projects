@@ -24,21 +24,24 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	// filter_size : filter_size of maxpolling
 	// all input, output matrices are vectorized
 
-	int col = blockDim.x * blockIdx.x + threadIdx.x;
-	int row = blockDim.y * blockIdx.y + threadIdx.y;
+    int tx = threadIdx.x, ty = threadIdx.y;
+    int bx = blockIdx.x,  by = blockIdx.y;
+
+    int row = by*blockDim.y + ty;
+    int col = bx*blockDim.x + tx;
 
 	// out of bound
 	__shared__ int tmp[TILE_WIDTH][TILE_WIDTH];
 
-	tmp[threadIdx.y][threadIdx.x] = input[col*input_size + row];
+	tmp[ty][tx] = input[col*input_size + row];
 	__syncthreads();
  
-	output[blockIdx.x*input_size + blockIdx.y] = tmp[blockIdx.x][blockIdx.y];
+	output[blockIdx.x*input_size + blockIdx.y] = tmp[by][bx];
 	__syncthreads();
  
-	if(output[blockIdx.x*input_size + blockIdx.y] < tmp[threadIdx.x][threadIdx.y])
+	if(output[blockIdx.x*input_size + blockIdx.y] < tmp[ty][tx])
 	{
-		 output[blockIdx.x*input_size + blockIdx.y] = tmp[threadIdx.x][threadIdx.y];
+		 output[blockIdx.x*input_size + blockIdx.y] = tmp[ty][tx];
 	}
 	__syncthreads();
 
