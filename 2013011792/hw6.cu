@@ -37,12 +37,12 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 	__syncthreads();
  
 	if(tx == 0 && ty == 0)
-		output[by*filter_size + bx] = tmp[row][col];
+		output[bx*filter_size + by] = tmp[row][col];
 	__syncthreads();
  
-	if(output[by*filter_size + bx] < tmp[row][col])
+	if(output[bx*filter_size + by] < tmp[row][col])
 	{
-		 output[by*filter_size + bx] = tmp[row][col];
+		 output[bx*filter_size + by] = tmp[row][col];
 	}
 	__syncthreads();
 
